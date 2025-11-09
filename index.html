@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Rounding Challenge</title>
+
+    <!-- PWA basics -->
     <meta name="theme-color" content="#6366f1" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <!-- Tailwind via CDN (works offline after first visit if cached by the service worker) -->
+    <link rel="manifest" href="manifest.json" />
+    <!-- iOS home-screen icon (Safari ignores manifest icons) -->
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+    <!-- Tailwind (CDN). It’ll be cached by the service worker after first load. -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap");
       body {
@@ -21,7 +26,7 @@
       }
       .container-card {
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        transition: transform 0.3s ease-in-out;
+        transition: transform 0.3s;
         border: 8px solid #f9fafb;
       }
       .challenge-number {
@@ -33,7 +38,7 @@
         -webkit-text-fill-color: transparent;
       }
       .feedback-input {
-        transition: all 0.3s ease;
+        transition: all 0.3s;
       }
       .shake {
         animation: shake 0.5s;
@@ -143,10 +148,11 @@
     </div>
 
     <script>
+      // Register the service worker (required for installability + offline)
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/service-worker.js");
-        });
+        window.addEventListener("load", () =>
+          navigator.serviceWorker.register("service-worker.js")
+        );
       }
 
       const challengeNumberDisplay = document.getElementById(
@@ -172,14 +178,12 @@
         checkButton.style.display = "block";
         newNumberButton.style.display = "none";
       }
-
-      function roundToNearest10(num) {
-        return Math.round(num / 10) * 10;
+      function roundToNearest10(n) {
+        return Math.round(n / 10) * 10;
       }
-      function roundToNearest100(num) {
-        return Math.round(num / 100) * 100;
+      function roundToNearest100(n) {
+        return Math.round(n / 100) * 100;
       }
-
       function generateNewChallenge() {
         currentChallengeNumber = Math.floor(Math.random() * 990) + 10;
         resetFeedback();
@@ -187,7 +191,6 @@
         guess100Input.value = "";
         challengeNumberDisplay.textContent = currentChallengeNumber;
       }
-
       function checkAnswers() {
         if (
           !currentChallengeNumber ||
@@ -212,6 +215,7 @@
           feedback10.classList.add("text-red-600");
           guess10Input.classList.add("border-red-500", "shake");
         }
+
         if (guess100 === correct100) {
           feedback100.textContent = "Super Duper! That’s correct! 🚀";
           feedback100.classList.add("text-green-600");
@@ -221,6 +225,7 @@
           feedback100.classList.add("text-red-600");
           guess100Input.classList.add("border-red-500", "shake");
         }
+
         guess10Input.disabled = true;
         guess100Input.disabled = true;
         checkButton.style.display = "none";
