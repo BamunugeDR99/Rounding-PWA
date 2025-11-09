@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rounding Challenge</title>
+    <meta name="theme-color" content="#6366f1" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <!-- Tailwind via CDN (works offline after first visit if cached by the service worker) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap");
+      body {
+        font-family: "Fredoka", "Inter", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f0abfc 0%, #6366f1 100%);
+      }
+      .container-card {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        transition: transform 0.3s ease-in-out;
+        border: 8px solid #f9fafb;
+      }
+      .challenge-number {
+        font-size: 4rem;
+        font-weight: 700;
+        line-height: 1;
+        background: linear-gradient(45deg, #fb7185, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .feedback-input {
+        transition: all 0.3s ease;
+      }
+      .shake {
+        animation: shake 0.5s;
+      }
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+          transform: translateX(-10px);
+        }
+        20%,
+        40%,
+        60%,
+        80% {
+          transform: translateX(10px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="p-4 w-full max-w-xl">
+      <div class="container-card bg-white p-6 md:p-10 rounded-3xl">
+        <h1
+          class="text-3xl md:text-4xl font-extrabold text-indigo-700 text-center mb-4"
+        >
+          🔢 Rounding Challenge 🎯
+        </h1>
+        <p class="text-center text-gray-600 mb-6 font-medium">
+          Round this number! Type your answers and hit the button to check.
+        </p>
+
+        <div
+          class="bg-yellow-100 border-4 border-yellow-400 p-6 rounded-2xl text-center mb-8 shadow-inner"
+        >
+          <p class="text-xl font-bold text-yellow-700 mb-2">The Number Is:</p>
+          <div id="challengeNumberDisplay" class="challenge-number">123</div>
+        </div>
+
+        <div class="space-y-6">
+          <div
+            class="bg-pink-50 p-4 rounded-xl shadow-md border border-pink-200"
+          >
+            <label
+              for="guess10Input"
+              class="block text-lg font-semibold text-pink-700 mb-2"
+            >
+              Round to the <strong>Nearest 10</strong> (👈)
+            </label>
+            <input
+              type="number"
+              id="guess10Input"
+              placeholder="Your answer"
+              class="feedback-input w-full p-3 text-2xl text-center border-2 border-pink-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-pink-300"
+            />
+            <div
+              id="feedback10"
+              class="text-sm mt-2 font-bold min-h-[1.5rem]"
+            ></div>
+          </div>
+
+          <div
+            class="bg-blue-50 p-4 rounded-xl shadow-md border border-blue-200"
+          >
+            <label
+              for="guess100Input"
+              class="block text-lg font-semibold text-blue-700 mb-2"
+            >
+              Round to the <strong>Nearest 100</strong> (💯)
+            </label>
+            <input
+              type="number"
+              id="guess100Input"
+              placeholder="Your answer"
+              class="feedback-input w-full p-3 text-2xl text-center border-2 border-blue-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300"
+            />
+            <div
+              id="feedback100"
+              class="text-sm mt-2 font-bold min-h-[1.5rem]"
+            ></div>
+          </div>
+        </div>
+
+        <div class="mt-8 space-y-4">
+          <button
+            id="checkButton"
+            onclick="checkAnswers()"
+            class="w-full py-4 text-white text-xl font-bold rounded-xl bg-green-500 hover:bg-green-600 transition duration-150 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            Check My Answers! ✅
+          </button>
+          <button
+            id="newNumberButton"
+            onclick="generateNewChallenge()"
+            class="w-full py-3 text-white text-lg font-bold rounded-xl bg-indigo-500 hover:bg-indigo-600 transition duration-150 shadow-md transform scale-95 hover:scale-100"
+            style="display: none"
+          >
+            Try a New Number! 🎲
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/service-worker.js");
+        });
+      }
+
+      const challengeNumberDisplay = document.getElementById(
+        "challengeNumberDisplay"
+      );
+      const guess10Input = document.getElementById("guess10Input");
+      const guess100Input = document.getElementById("guess100Input");
+      const feedback10 = document.getElementById("feedback10");
+      const feedback100 = document.getElementById("feedback100");
+      const checkButton = document.getElementById("checkButton");
+      const newNumberButton = document.getElementById("newNumberButton");
+      let currentChallengeNumber = 0;
+
+      function resetFeedback() {
+        [feedback10, feedback100].forEach((el) => {
+          el.textContent = "";
+          el.classList.remove("text-green-600", "text-red-600", "shake");
+        });
+        [guess10Input, guess100Input].forEach((el) => {
+          el.classList.remove("border-green-500", "border-red-500");
+          el.disabled = false;
+        });
+        checkButton.style.display = "block";
+        newNumberButton.style.display = "none";
+      }
+
+      function roundToNearest10(num) {
+        return Math.round(num / 10) * 10;
+      }
+      function roundToNearest100(num) {
+        return Math.round(num / 100) * 100;
+      }
+
+      function generateNewChallenge() {
+        currentChallengeNumber = Math.floor(Math.random() * 990) + 10;
+        resetFeedback();
+        guess10Input.value = "";
+        guess100Input.value = "";
+        challengeNumberDisplay.textContent = currentChallengeNumber;
+      }
+
+      function checkAnswers() {
+        if (
+          !currentChallengeNumber ||
+          !guess10Input.value ||
+          !guess100Input.value
+        ) {
+          feedback10.textContent = "Please enter both guesses!";
+          feedback10.classList.add("text-red-600", "shake");
+          return;
+        }
+        const correct10 = roundToNearest10(currentChallengeNumber);
+        const correct100 = roundToNearest100(currentChallengeNumber);
+        const guess10 = parseInt(guess10Input.value, 10);
+        const guess100 = parseInt(guess100Input.value, 10);
+
+        if (guess10 === correct10) {
+          feedback10.textContent = "Awesome! That’s correct! ⭐";
+          feedback10.classList.add("text-green-600");
+          guess10Input.classList.add("border-green-500");
+        } else {
+          feedback10.textContent = `Oops! The answer is ${correct10}. Keep practicing! 😕`;
+          feedback10.classList.add("text-red-600");
+          guess10Input.classList.add("border-red-500", "shake");
+        }
+        if (guess100 === correct100) {
+          feedback100.textContent = "Super Duper! That’s correct! 🚀";
+          feedback100.classList.add("text-green-600");
+          guess100Input.classList.add("border-green-500");
+        } else {
+          feedback100.textContent = `Whoops! The answer is ${correct100}. Try again next time! 💡`;
+          feedback100.classList.add("text-red-600");
+          guess100Input.classList.add("border-red-500", "shake");
+        }
+        guess10Input.disabled = true;
+        guess100Input.disabled = true;
+        checkButton.style.display = "none";
+        newNumberButton.style.display = "block";
+      }
+
+      window.onload = generateNewChallenge;
+    </script>
+  </body>
+</html>
